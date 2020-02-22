@@ -40,15 +40,18 @@
 #include "memory.h"
 #include "fmt.h"
 
+#include "mem_map.h"
+
 Menu rosalinaMenu = {
     "Rosalina menu",
     .nbItems = 11,
-    {
-        { "New 3DS menu...", MENU, .menu = &N3DSMenu },
-        { "Cheats...", METHOD, .method = &RosalinaMenu_Cheats },
+    {   
         { "Process list", METHOD, .method = &RosalinaMenu_ProcessList },
-        { "Take screenshot (slow!)", METHOD, .method = &RosalinaMenu_TakeScreenshot },
         { "Debugger options...", MENU, .menu = &debuggerMenu },
+        { "Mem Map", MENU, .menu = &MMMenu},
+        { "Cheats...", METHOD, .method = &RosalinaMenu_Cheats },
+        { "New 3DS menu...", MENU, .menu = &N3DSMenu },
+        //{ "Take screenshot (slow!)", METHOD, .method = &RosalinaMenu_TakeScreenshot },
         { "System configuration...", MENU, .menu = &sysconfigMenu },
         { "Screen filters...", MENU, .menu = &screenFiltersMenu },
         { "Miscellaneous options...", MENU, .menu = &miscellaneousMenu },

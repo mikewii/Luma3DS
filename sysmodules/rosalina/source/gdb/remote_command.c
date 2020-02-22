@@ -208,7 +208,7 @@ GDB_DECLARE_REMOTE_COMMAND_HANDLER(GetMmuConfig)
     return GDB_SendHexPacket(ctx, outbuf, n);
 }
 
-static const char  *FormatMemPerm(u32 perm)
+const char  *FormatMemPerm(u32 perm)
 {
     if (perm == MEMPERM_DONTCARE)
         return "???";
@@ -222,7 +222,7 @@ static const char  *FormatMemPerm(u32 perm)
     return buf;
 }
 
-static const char   *FormatMemState(u32 state)
+const char   *FormatMemState(u32 state)
 {
     if (state > 11)
         return "Unknown";

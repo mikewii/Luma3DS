@@ -20,3 +20,6 @@ GDB_DECLARE_REMOTE_COMMAND_HANDLER(FlushCaches);
 GDB_DECLARE_REMOTE_COMMAND_HANDLER(ToggleExternalMemoryAccess);
 
 GDB_DECLARE_QUERY_HANDLER(Rcmd);
+
+const char  *FormatMemPerm(u32 perm);
+const char   *FormatMemState(u32 state);
