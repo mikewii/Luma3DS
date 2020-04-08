@@ -24,13 +24,20 @@
 *         reasonable ways as different from the original version.
 */
 
-#pragma once
+#include "globals.h"
+#include "svc/MapProcessMemoryExOld.h"
 
-#include <3ds/types.h>
-#include <string.h>
+Result UnmapProcessMemoryExOld(Handle processHandle, void *dst, u32 size)
+{
+    if(kernelVersion < SYSTEM_VERSION(2, 37, 0)) // < 6.x
+        return UnmapProcessMemory(processHandle, dst, size); // equivalent when size <= 64MB
 
-u8 *memsearch(u8 *startPos, const void *pattern, u32 size, u32 patternSize);
-void *memset32(void *dest, u32 value, u32 size);
-void hexItoa(u64 number, char *out, u32 digits, bool uppercase);
-unsigned long int xstrtoul(const char *nptr, char **endptr, int base, bool allowPrefix, bool *ok);
-unsigned long long int xstrtoull(const char *nptr, char **endptr, int base, bool allowPrefix, bool *ok);
+    KProcessHwInfo *currentHwInfo = hwInfoOfProcess(currentCoreContext->objectContext.currentProcess);
+
+    Result res = KProcessHwInfo__UnmapProcessMemory(currentHwInfo, dst, size >> 12);
+
+    invalidateEntireInstructionCache();
+    flushEntireDataCache();
+
+    return res;
+}

@@ -42,9 +42,12 @@
 #include "svc/KernelSetState.h"
 #include "svc/CustomBackdoor.h"
 #include "svc/MapProcessMemoryEx.h"
+#include "svc/MapProcessMemoryExOld.h"
 #include "svc/UnmapProcessMemoryEx.h"
+#include "svc/UnmapProcessMemoryExOld.h"
 #include "svc/ControlService.h"
 #include "svc/CopyHandle.h"
+#include "svc/ControlProcess.h"
 #include "svc/TranslateHandle.h"
 
 void *officialSVCs[0x7E] = {NULL};
@@ -66,6 +69,7 @@ void signalSvcReturn(u8 *pageEnd)
 {
     u32 svcId = (u32) *(u8 *)(pageEnd - 0xB5);
     KProcess *currentProcess = currentCoreContext->objectContext.currentProcess;
+    u32      flags = KPROCESS_GET_RVALUE(currentProcess, customFlags);
 
     if(svcId == 0xFE)
         svcId = *(u32 *)(pageEnd - 0x110 + 8 * 4); // r12 ; note: max theortical SVC atm: 0x1FFFFFFF. We don't support catching svcIds >= 0x100 atm either
@@ -73,6 +77,13 @@ void signalSvcReturn(u8 *pageEnd)
     // Since DBGEVENT_SYSCALL_RETURN is non blocking, we'll cheat using EXCEVENT_UNDEFINED_SYSCALL (debug->svcId is fortunately an u16!)
     if(debugOfProcess(currentProcess) != NULL && shouldSignalSyscallDebugEvent(currentProcess, svcId))
         SignalDebugEvent(DBGEVENT_OUTPUT_STRING, 0xFFFFFFFF, svcId);
+
+    // Signal if the memory layout of the process changed
+    if (flags & SignalOnMemLayoutChanges && flags & MemLayoutChanged)
+    {
+        *KPROCESS_GET_PTR(currentProcess, customFlags) = flags & ~MemLayoutChanged;
+        SignalEvent(KPROCESS_GET_RVALUE(currentProcess, onMemoryLayoutChangeEvent));
+    }
 }
 
 void postprocessSvc(void)
@@ -95,6 +106,22 @@ void *svcHook(u8 *pageEnd)
     {
         case 0x01:
             return ControlMemoryHookWrapper;
+        case 0x03: /* svcExitProcess */
+        {
+            // Signal that the process is about to be terminated
+            u32      flags = KPROCESS_GET_RVALUE(currentProcess, customFlags);
+
+            if (flags & SignalOnExit)
+            {
+                SignalEvent(KPROCESS_GET_RVALUE(currentProcess, onProcessExitEvent));
+
+                KEvent* event = (KEvent *)KProcessHandleTable__ToKAutoObject(handleTableOfProcess(currentProcess),
+                                                            KPROCESS_GET_RVALUE(currentProcess, resumeProcessExitEvent));
+                WaitSynchronization1(NULL, currentCoreContext->objectContext.currentThread, (KSynchronizationObject *)event, 10000000000ULL);
+                ((KAutoObject *)event)->vtable->DecrementReferenceCount((KAutoObject *)event);
+            }
+            return officialSVCs[0x3];
+        }
         case 0x29:
             return GetHandleInfoHookWrapper;
         case 0x2A:
@@ -136,11 +163,15 @@ void *svcHook(u8 *pageEnd)
             return invalidateEntireInstructionCache;
 
         case 0xA0:
-            return MapProcessMemoryEx;
+            return MapProcessMemoryExWrapper;
         case 0xA1:
             return UnmapProcessMemoryEx;
         case 0xA2:
             return ControlMemoryEx;
+        case 0xAA:
+            return MapProcessMemoryExOld;
+        case 0xAB:
+            return UnmapProcessMemoryExOld;
 
         case 0xB0:
             return ControlService;
@@ -148,6 +179,8 @@ void *svcHook(u8 *pageEnd)
             return CopyHandleWrapper;
         case 0xB2:
             return TranslateHandleWrapper;
+        case 0xB3:
+            return ControlProcess;
 
         default:
             return (svcId <= 0x7D) ? officialSVCs[svcId] : NULL;

@@ -105,12 +105,12 @@ static u32 ProcessPatchesMenu_PatchUnpatchProcessByName(const char *name, Result
     s64 textTotalRoundedSize = 0, startAddress = 0;
     svcGetProcessInfo(&textTotalRoundedSize, processHandle, 0x10002); // only patch .text
     svcGetProcessInfo(&startAddress, processHandle, 0x10005);
-    if(R_FAILED(res = svcMapProcessMemoryEx(processHandle, 0x00100000, (u32) startAddress, textTotalRoundedSize)))
+    if(R_FAILED(res = svcMapProcessMemoryExOld(processHandle, 0x00100000, (u32) startAddress, textTotalRoundedSize)))
         return res;
 
     res = func(textTotalRoundedSize);
 
-    svcUnmapProcessMemoryEx(processHandle, 0x00100000, textTotalRoundedSize);
+    svcUnmapProcessMemoryExOld(processHandle, 0x00100000, textTotalRoundedSize);
     return res;
 }
 

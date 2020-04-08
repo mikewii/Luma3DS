@@ -24,13 +24,21 @@
 *         reasonable ways as different from the original version.
 */
 
-#pragma once
+#include "svc/MapProcessMemoryExOld.h"
 
-#include <3ds/types.h>
-#include <string.h>
+Result MapProcessMemoryExOld(Handle processHandle, void *dst, void *src, u32 size)
+{
+    KProcessHandleTable *handleTable = handleTableOfProcess(currentCoreContext->objectContext.currentProcess);
+    KProcessHwInfo *currentHwInfo = hwInfoOfProcess(currentCoreContext->objectContext.currentProcess);
+    KProcess *process = KProcessHandleTable__ToKProcess(handleTable, processHandle);
 
-u8 *memsearch(u8 *startPos, const void *pattern, u32 size, u32 patternSize);
-void *memset32(void *dest, u32 value, u32 size);
-void hexItoa(u64 number, char *out, u32 digits, bool uppercase);
-unsigned long int xstrtoul(const char *nptr, char **endptr, int base, bool allowPrefix, bool *ok);
-unsigned long long int xstrtoull(const char *nptr, char **endptr, int base, bool allowPrefix, bool *ok);
+    if(process == NULL)
+        return 0xD8E007F7;
+
+    Result res = KProcessHwInfo__MapProcessMemory(currentHwInfo, hwInfoOfProcess(process), dst, src, size >> 12);
+
+    KAutoObject *obj = (KAutoObject *)process;
+    obj->vtable->DecrementReferenceCount(obj);
+
+    return res;
+}

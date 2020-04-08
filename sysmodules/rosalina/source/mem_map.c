@@ -112,7 +112,7 @@ void	MM__ShowMemoryRegions(const ProcessInfo *info) {
     	memSegmentsAmount);
 
     //sprintf(runtimeBuf, "Runtime: %lld / 33513.982 = ? | Handle: %lX", runtime, handleN);
-    sprintf(runtimeBuf, "Chose segment and press A to change perm to rw- ");
+    sprintf(runtimeBuf, "Choose segment and press A to change perm to rw- ");
 
     do
     {

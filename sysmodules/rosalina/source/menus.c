@@ -41,14 +41,16 @@
 #include "fmt.h"
 
 #include "mem_map.h"
+#include "plgloader.h"
 
 Menu rosalinaMenu = {
     "Rosalina menu",
-    .nbItems = 11,
+    .nbItems = 12,
     {   
         { "Process list", METHOD, .method = &RosalinaMenu_ProcessList },
         { "Debugger options...", MENU, .menu = &debuggerMenu },
         { "Mem Map", MENU, .menu = &MMMenu},
+        { "", METHOD, .method = PluginLoader__MenuCallback},
         { "Cheats...", METHOD, .method = &RosalinaMenu_Cheats },
         { "New 3DS menu...", MENU, .menu = &N3DSMenu },
         //{ "Take screenshot (slow!)", METHOD, .method = &RosalinaMenu_TakeScreenshot },
