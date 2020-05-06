@@ -42,7 +42,7 @@ typedef struct
     u32             config[32];
 }   PluginHeader;
 
-static bool         g_isEnabled;
+static u8         	g_isEnabled;
 static u8  *        g_memBlock;
 static char         g_path[256];
 static Handle       g_process = 0;
@@ -71,24 +71,28 @@ MyThread *  PluginLoader__CreateThread(void)
     return &g_pluginLoaderThread;
 }
 
-bool        PluginLoader__IsEnabled(void)
+bool		PluginLoader__IsEnabled(void)
 {
     return g_isEnabled;
 }
 
-void        PluginLoader__MenuCallback(void)
+void		PluginLoader__MenuCallback(void)
 {
-    g_isEnabled = !g_isEnabled;
+    //g_isEnabled = !g_isEnabled; // 2 way switch
+    // 3 way switch
+    g_isEnabled++;
+	g_isEnabled %= 3; // so it increments always, but when it's 3, 3 % 3 = 0
     SaveSettings();
     PluginLoader__UpdateMenu();
 }
 
-void        PluginLoader__UpdateMenu(void)
+void		PluginLoader__UpdateMenu(void)
 {
-    static const char *status[2] =
+    static const char *status[3] =
     {
         "Plugin Loader: [Disabled]",
-        "Plugin Loader: [Enabled]"
+        "Plugin Loader: [default]",
+        "Plugin Loader: [CTRPF]"
     };
 
     rosalinaMenu.items[3].title = status[g_isEnabled];
@@ -274,6 +278,16 @@ static bool     TryToLoadPlugin(Handle process)
         {
             // Try to open default plugin
             const char *defaultPath = "/luma/plugins/default.3gx";
+            switch(g_isEnabled){
+            	case(1):{
+            		defaultPath = "/luma/plugins/default.3gx";
+            		break;
+            	}
+            	case(2):{
+            		defaultPath = "/luma/plugins/ctrpf.3gx";
+            		break;
+            	}
+            } // switch             
             if (OpenFile(&plugin, defaultPath))
                 goto exitFail;
             hdr->isDefaultPlugin = 1;
