@@ -1,6 +1,6 @@
 /*
 *   This file is part of Luma3DS
-*   Copyright (C) 2016-2019 Aurora Wright, TuxSH
+*   Copyright (C) 2016-2020 Aurora Wright, TuxSH
 *
 *   This program is free software: you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -75,7 +75,7 @@ void RosalinaMenu_ShowCredits(void)
         Draw_Lock();
         Draw_DrawString(10, 10, COLOR_TITLE, "Rosalina -- Luma3DS credits");
 
-        u32 posY = Draw_DrawString(10, 30, COLOR_WHITE, "Luma3DS (c) 2016-2019 AuroraWright, TuxSH") + SPACING_Y;
+        u32 posY = Draw_DrawString(10, 30, COLOR_WHITE, "Luma3DS (c) 2016-2020 AuroraWright, TuxSH") + SPACING_Y;
 
         posY = Draw_DrawString(10, posY + SPACING_Y, COLOR_WHITE, "3DSX loading code by fincs");
         posY = Draw_DrawString(10, posY + SPACING_Y, COLOR_WHITE, "Networking code & basic GDB functionality by Stary");
@@ -116,8 +116,10 @@ void RosalinaMenu_Reboot(void)
 
         if(pressed & BUTTON_A)
         {
-            APT_HardwareResetAsync();
             menuLeave();
+            ptmSysmInit();
+            PTMSYSM_RebootAsync(4 * 1000 * 1000 * 1000LL); // Kill everything after 4s (value used by PM on firmlaunch)
+            ptmSysmExit();
         } else if(pressed & BUTTON_B)
             return;
     }
@@ -144,7 +146,9 @@ void RosalinaMenu_PowerOff(void) // Soft shutdown.
         if(pressed & BUTTON_A)
         {
             menuLeave();
-            srvPublishToSubscriber(0x203, 0);
+            ptmSysmInit();
+            PTMSYSM_ShutdownAsync(4 * 1000 * 1000 * 1000LL); // Kill everything after 4s (value used by PM on firmlaunch)
+            ptmSysmExit();
         }
         else if(pressed & BUTTON_B)
             return;

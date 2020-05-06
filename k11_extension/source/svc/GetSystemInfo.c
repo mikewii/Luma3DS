@@ -1,6 +1,6 @@
 /*
 *   This file is part of Luma3DS
-*   Copyright (C) 2016-2019 Aurora Wright, TuxSH
+*   Copyright (C) 2016-2020 Aurora Wright, TuxSH
 *
 *   This program is free software: you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -86,6 +86,7 @@ Result GetSystemInfoHook(s64 *out, s32 type, s32 param)
                     break;
 
                 default:
+                    *out = 0;
                     res = 0xF8C007F4; // not implemented
                     break;
             }
@@ -108,13 +109,16 @@ Result GetSystemInfoHook(s64 *out, s32 type, s32 param)
                         *out = L2C_CTRL & 1;
                         break;
                     default:
+                        *out = 0;
                         res = 0xF8C007F4;
                         break;
                 }
             }
             else
+            {
+                *out = 0;
                 res = 0xF8C007F4;
-
+            }
             break;
         }
 
@@ -131,7 +135,10 @@ Result GetSystemInfoHook(s64 *out, s32 type, s32 param)
                     if((u32)param <= getNumberOfCores())
                         *out = L1MMUTableAddrs[param - 1];
                     else
+                    {
+                        *out = 0;
                         res = 0xF8C007F4;
+                    }
 
                     break;
                 }
@@ -139,6 +146,13 @@ Result GetSystemInfoHook(s64 *out, s32 type, s32 param)
 
             break;
         }
+
+        case 0x20000:
+        {
+            *out = 0;
+            return 1;
+        }
+
         default:
             GetSystemInfo(out, type, param);
             break;
