@@ -12,6 +12,8 @@
 #define MEMPERM_RW (MEMPERM_READ | MEMPERM_WRITE)
 #define MemBlockSize (5*1024*1024) /* 5 MiB */
 
+static char plgPath[256];
+
 typedef struct
 {
     Result          code;
@@ -86,6 +88,7 @@ void		PluginLoader__MenuCallback(void)
     PluginLoader__UpdateMenu();
 }
 
+extern bool isN3DS;
 void		PluginLoader__UpdateMenu(void)
 {
     static const char *status[3] =
@@ -94,8 +97,10 @@ void		PluginLoader__UpdateMenu(void)
         "Plugin Loader: [default]",
         "Plugin Loader: [CTRPF]"
     };
-
-    rosalinaMenu.items[3].title = status[g_isEnabled];
+    u8 pos = 3;
+    //if(!isN3DS)
+    //    pos--;
+    rosalinaMenu.items[pos].title = status[g_isEnabled];
 }
 
 static Result     MapPluginInProcess(Handle proc, u32 size)
@@ -216,7 +221,11 @@ exit:
 
 static Result   OpenFile(IFile *file, const char *path)
 {
-    return IFile_Open(file, ARCHIVE_SDMC, fsMakePath(PATH_EMPTY, ""), fsMakePath(PATH_ASCII, path), FS_OPEN_READ);
+	Result res = 0;
+	if (R_SUCCEEDED((res = IFile_Open(file, ARCHIVE_SDMC, fsMakePath(PATH_EMPTY, ""), fsMakePath(PATH_ASCII, path), FS_OPEN_READ)))) {
+		strcpy(plgPath, (char*)path);
+	}
+    return res;
 }
 
 static Result   CheckPluginCompatibility(_3gx_Header *header, u32 processTitle)
@@ -279,21 +288,29 @@ static bool     TryToLoadPlugin(Handle process)
             // Try to open default plugin
             const char *defaultPath = "/luma/plugins/default.3gx";
             switch(g_isEnabled){
-            	case(1):{
+            	case(1):{ // default
             		defaultPath = "/luma/plugins/default.3gx";
+		            if(R_FAILED((res = OpenFile(&plugin, defaultPath)))){
+		            	defaultPath = "/default.3gx";
+		            	if (OpenFile(&plugin, defaultPath))
+		                	goto exitFail;
+		            }
             		break;
             	}
-            	case(2):{
+            	case(2):{ // ctrpf
             		defaultPath = "/luma/plugins/ctrpf.3gx";
+            		if (OpenFile(&plugin, defaultPath))
+            			goto exitFail;
+
             		break;
             	}
             } // switch             
-            if (OpenFile(&plugin, defaultPath))
-                goto exitFail;
             hdr->isDefaultPlugin = 1;
             hdr->pluginPathPA = PA_FROM_VA_PTR(defaultPath);
+            *plgPath = *defaultPath;
         }
     }
+
 
     if (R_FAILED((res = IFile_GetSize(&plugin, &fileSize))))
         g_error.message = "Couldn't get file size";
@@ -448,7 +465,7 @@ static void     PluginLoader_HandleCommands(void)
 
         case 5: // Display menu
         {
-            if (cmdbuf[0] != IPC_MakeHeader(5, 1, 8))
+            if (cmdbuf[0] != IPC_MakeHeader(5, 1, 10))
             {
                 error(cmdbuf, 0xD9001830);
                 break;
@@ -498,6 +515,24 @@ static void     PluginLoader_HandleCommands(void)
 
             cmdbuf[0] = IPC_MakeHeader(7, 1, 0);
             cmdbuf[1] = 0;
+            break;
+        }
+        case 8: // Get pugin path
+        {
+        	if(cmdbuf[0] != IPC_MakeHeader(8, 0, 2)){
+                error(cmdbuf, 0xD9001830);
+                break;
+            }
+
+            char* path = (char*)cmdbuf[2];
+            int length = cmdbuf[1] >> 4;
+
+            strncpy(path, plgPath, length >= 256 ? 256 : length);
+
+            cmdbuf[0] = IPC_MakeHeader(8, 1, 2);
+            cmdbuf[1] = 0;
+            cmdbuf[2] = IPC_Desc_Buffer(length, IPC_BUFFER_RW);
+            cmdbuf[3] = (u32)path;
             break;
         }
     }

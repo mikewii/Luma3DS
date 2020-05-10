@@ -148,7 +148,7 @@ void menuThreadMain(void)
     if(!isN3DS)
     {
         rosalinaMenu.nbItems--;
-        for(u32 i = 0; i <= rosalinaMenu.nbItems; i++)
+        for(u32 i = 5; i <= rosalinaMenu.nbItems; i++)
             rosalinaMenu.items[i] = rosalinaMenu.items[i+1];
     }
     else
@@ -456,8 +456,9 @@ void    DisplayPluginMenu(u32   *cmdbuf)
     u8              *states = (u8 *)cmdbuf[3];
     char            buffer[60];
     const char      *title = (const char *)cmdbuf[5];
-    const string    *items = (const string *)cmdbuf[7];
-    const string    *hints = (const string *)cmdbuf[9];
+    const char      *bottom = (const char *)cmdbuf[7];
+    const string    *items = (const string *)cmdbuf[9];
+    const string    *hints = (const string *)cmdbuf[11];
 
     menuEnter();
     Draw_Lock();
@@ -472,6 +473,7 @@ void    DisplayPluginMenu(u32   *cmdbuf)
 
             // Draw title
             Draw_DrawString(10, 10, COLOR_TITLE, title);
+            Draw_DrawFormattedString(10, SCREEN_BOT_HEIGHT - 20, COLOR_TITLE, "Loaded from: %s", bottom);
 
             // Draw items
             u32 i = MAX(0, (int)cursor - 7);

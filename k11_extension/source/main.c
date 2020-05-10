@@ -110,25 +110,25 @@ static void installMmuHooks(void)
     u32 *off;
 
     for(off = (u32 *)officialSVCs[0x1F]; *off != 0xE1CD60F0; ++off);
-    off = decodeARMBranch(off + 1);
+    off = decodeArmBranch(off + 1);
 
     for (; *off != 0xE58D5000; ++off);
-    off = decodeARMBranch(off + 1);
+    off = decodeArmBranch(off + 1);
 
     for (; *off != 0xE58DC000; ++off);
-    off = decodeARMBranch(off + 1);
+    off = decodeArmBranch(off + 1);
     for (; *off != 0xE1A0000B; ++off);
-    off = decodeARMBranch(off + 1);
+    off = decodeArmBranch(off + 1);
     for (; *off != 0xE59D2030; ++off);
-    off = decodeARMBranch(off + 1);
+    off = decodeArmBranch(off + 1);
 
     for (; *off != 0xE88D1100; ++off);
-    mapL2Section = (u32 *)PA_FROM_VA_PTR(decodeARMBranch(off + 1));
+    mapL2Section = (u32 *)PA_FROM_VA_PTR(decodeArmBranch(off + 1));
 
     do
     {
         for (; *off != 0xE58D8000; ++off);
-        u32 *loc = (u32 *)PA_FROM_VA_PTR(decodeARMBranch(++off));
+        u32 *loc = (u32 *)PA_FROM_VA_PTR(decodeArmBranch(++off));
         if (loc != mapL2Section)
             mapL1Section = loc;
     } while (mapL1Section == NULL);
@@ -149,10 +149,10 @@ static void findUsefulSymbols(void)
     // Patch ERRF__DumpException
     for(off = (u32 *)0xFFFF0000; *off != 0xE1A04005; ++off);
     ++off;
-    *(u32 *)PA_FROM_VA_PTR(off) = makeARMBranch(off, off + 51, false);
+    *(u32 *)PA_FROM_VA_PTR(off) = makeArmBranch(off, off + 51, false);
 
     for(; *off != 0xE2100102; ++off);
-    KProcessHwInfo__QueryMemory = (Result (*)(KProcessHwInfo *, MemoryInfo *, PageInfo *, void *))decodeARMBranch(off - 1);
+    KProcessHwInfo__QueryMemory = (Result (*)(KProcessHwInfo *, MemoryInfo *, PageInfo *, void *))decodeArmBranch(off - 1);
 
     for(; *off != 0xE1A0D002; off++);
     off += 3;
@@ -218,16 +218,16 @@ static void findUsefulSymbols(void)
     KProcessHwInfo__UnmapProcessMemory = (Result (*)(KProcessHwInfo *, void *, u32))decodeArmBranch(off - 1);
 
     for (off = (u32 *)officialSVCs[0x70]; *off != 0xE8881200 && *off != 0xE8891900; ++off);
-    for (off = (u32 *)decodeARMBranch(off + 1); *off != 0xE2101102; ++off);
-    KProcessHwInfo__CheckVaState = (Result (*)(KProcessHwInfo *, u32, u32, u32, u32))decodeARMBranch(off - 1);
+    for (off = (u32 *)decodeArmBranch(off + 1); *off != 0xE2101102; ++off);
+    KProcessHwInfo__CheckVaState = (Result (*)(KProcessHwInfo *, u32, u32, u32, u32))decodeArmBranch(off - 1);
     for (; *off != 0xE28D1008; ++off);
-    KProcessHwInfo__GetListOfKBlockInfoForVA = (Result (*)(KProcessHwInfo*, KLinkedList*, u32, u32))decodeARMBranch(off + 1);
+    KProcessHwInfo__GetListOfKBlockInfoForVA = (Result (*)(KProcessHwInfo*, KLinkedList*, u32, u32))decodeArmBranch(off + 1);
 
     for (; *off != 0xE2000102; ++off);
-    KProcessHwInfo__MapListOfKBlockInfo = (Result (*)(KProcessHwInfo*, u32, KLinkedList*, u32, u32, u32))decodeARMBranch(off - 1);
+    KProcessHwInfo__MapListOfKBlockInfo = (Result (*)(KProcessHwInfo*, u32, KLinkedList*, u32, u32, u32))decodeArmBranch(off - 1);
 
     for (; *off != 0xE8BD8FF0; ++off);
-    KLinkedList_KBlockInfo__Clear = (void (*)(KLinkedList *))decodeARMBranch(off - 6);
+    KLinkedList_KBlockInfo__Clear = (void (*)(KLinkedList *))decodeArmBranch(off - 6);
 
     for(off = (u32 *)officialSVCs[0x7C]; *off != 0x03530000; off++);
     KObjectMutex__WaitAndAcquire = (void (*)(KObjectMutex *))decodeArmBranch(++off);
@@ -274,7 +274,7 @@ static void findUsefulSymbols(void)
     ControlMemory = (Result (*)(u32 *, u32, u32, u32, MemOp, MemPerm, bool))
                     decodeArmBranch((u32 *)officialSVCs[0x01] + 5);
     SleepThread = (void (*)(s64))officialSVCs[0x0A];
-    CreateEvent = (Result (*)(Handle *, ResetType))decodeARMBranch((u32 *)officialSVCs[0x17] + 3);
+    CreateEvent = (Result (*)(Handle *, ResetType))decodeArmBranch((u32 *)officialSVCs[0x17] + 3);
     CloseHandle = (Result (*)(Handle))officialSVCs[0x23];
     GetHandleInfo = (Result (*)(s64 *, Handle, u32))decodeArmBranch((u32 *)officialSVCs[0x29] + 3);
     GetSystemInfo = (Result (*)(s64 *, s32, s32))decodeArmBranch((u32 *)officialSVCs[0x2A] + 3);
@@ -282,9 +282,9 @@ static void findUsefulSymbols(void)
     GetThreadInfo = (Result (*)(s64 *, Handle, u32))decodeArmBranch((u32 *)officialSVCs[0x2C] + 3);
     ConnectToPort = (Result (*)(Handle *, const char*))decodeArmBranch((u32 *)officialSVCs[0x2D] + 3);
     SendSyncRequest = (Result (*)(Handle))officialSVCs[0x32];
-    OpenProcess = (Result (*)(Handle *, u32))decodeARMBranch((u32 *)officialSVCs[0x33] + 3);
-    GetProcessId = (Result (*)(u32 *, Handle))decodeARMBranch((u32 *)officialSVCs[0x35] + 3);
-    DebugActiveProcess = (Result (*)(Handle *, u32))decodeARMBranch((u32 *)officialSVCs[0x60] + 3);
+    OpenProcess = (Result (*)(Handle *, u32))decodeArmBranch((u32 *)officialSVCs[0x33] + 3);
+    GetProcessId = (Result (*)(u32 *, Handle))decodeArmBranch((u32 *)officialSVCs[0x35] + 3);
+    DebugActiveProcess = (Result (*)(Handle *, u32))decodeArmBranch((u32 *)officialSVCs[0x60] + 3);
     SignalEvent = (Result (*)(Handle event))officialSVCs[0x18];
     UnmapProcessMemory = (Result (*)(Handle, void *, u32))officialSVCs[0x72];
     KernelSetState = (Result (*)(u32, u32, u32, u32))((u32 *)officialSVCs[0x7C] + 1);
