@@ -36,6 +36,7 @@ Result GetHandleInfoHook(s64 *out, Handle handle, u32 type)
         KProcessHwInfo      *hwInfo;
         KProcessHandleTable *handleTable = handleTableOfProcess(currentCoreContext->objectContext.currentProcess);
         KAutoObject         *obj;
+
         if(handle == CUR_PROCESS_HANDLE)
         {
             obj = (KAutoObject *)(currentCoreContext->objectContext.currentProcess);
@@ -80,7 +81,7 @@ Result GetHandleInfoHook(s64 *out, Handle handle, u32 type)
                 Handle          hOut;
                 KClassToken     token;
                 KProcess *      owner = NULL;
-        //*out = hwInfo != NULL ? KPROCESSHWINFO_GET_RVALUE(hwInfo, contextId) : -1;
+                
                 obj->vtable->GetClassToken(&token, obj);
                 switch(token.flags)
                 {
@@ -126,10 +127,9 @@ Result GetHandleInfoHook(s64 *out, Handle handle, u32 type)
                 break;
         }
 
-        
-
         obj->vtable->DecrementReferenceCount(obj);
         return res;
     }
+
     return GetHandleInfo(out, handle, type);
 }

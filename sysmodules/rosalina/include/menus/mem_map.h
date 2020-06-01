@@ -30,6 +30,7 @@ Handle	MM__GetProcessHandle(u32 pid);
 void	MM__MapProcessMemory(const ProcessInfo *info);
 int		MM__MemorySegmentFormatInfoLine(char *out, const MemInfo *info);
 void	MM__UnlockMemoryRegion(u32 pid, const MemInfo *info);
+void	MM__DumpMemoryRegion(const char* name, const MemInfo *info);
 
 void	MM__MapToRosalina(u32 pid, s32 SegmentsAmount);
 void	MM__UnMapFromRosalina(u32 pid, s32 SegmentsAmount);

@@ -85,6 +85,15 @@ ControlMemoryEx:
     add sp, #20
     pop {pc}
 
+.global ControlMemoryUnsafeWrapper
+.type   ControlMemoryUnsafeWrapper, %function
+ControlMemoryUnsafeWrapper:
+    push {lr}
+    str r4, [sp, #-4]!
+    bl ControlMemoryUnsafe
+    add sp, #4
+    pop {pc}
+
 .global MapProcessMemoryExWrapper
 .type   MapProcessMemoryExWrapper, %function
 MapProcessMemoryExWrapper:

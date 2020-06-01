@@ -36,8 +36,7 @@
 #include "minisoc.h"
 #include "ifile.h"
 #include "pmdbgext.h"
-
-#include "plgloader.h"
+#include "plugin.h"
 
 Menu miscellaneousMenu = {
     "Miscellaneous options menu",

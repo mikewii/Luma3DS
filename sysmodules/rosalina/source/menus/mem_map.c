@@ -1,6 +1,6 @@
 #include <3ds.h>
 #include <3ds/os.h>
-#include "mem_map.h"
+#include "menus/mem_map.h"
 #include "miscellaneous.h"
 #include "fmt.h"
 //#include "utils.h"
@@ -152,6 +152,14 @@ void	MM__ShowMemoryRegions(const ProcessInfo *info) {
 	        break;
 	    else if(pressed & BUTTON_A) {
 	        MM__UnlockMemoryRegion(info->pid, &memi[selected]);
+
+	        Draw_Lock();
+		    Draw_ClearFramebuffer();
+		    Draw_FlushFramebuffer();
+		    Draw_Unlock();
+	    }
+	    else if(pressed & BUTTON_Y) {
+	        MM__DumpMemoryRegion(info->name, &memi[selected]);
 
 	        Draw_Lock();
 		    Draw_ClearFramebuffer();
@@ -350,4 +358,51 @@ void	MM__UnlockMemoryRegion(u32 pid, const MemInfo *info) {
         MEMOP_PROT,
         MEMPERM_READ | MEMPERM_WRITE);
 	svcCloseHandle(handle);
+}
+
+typedef struct
+{
+    Result          code;
+    const char *    message;
+}   Error;
+static Error        m_error;
+
+#include "ifile.h"
+void	MM__DumpMemoryRegion(const char* name, const MemInfo *info) {
+	Result res = 0;
+	IFile file;
+	u64 total;
+	char filename[40];
+	u32 PA = svcConvertVAToPA((const void *)info->base_addr, false);
+
+	sprintf(filename, "/luma/dumps/%s_%08lX.bin",
+        name,
+        info->base_addr);
+
+	if (R_FAILED(res = IFile_Open(
+		&file,
+		ARCHIVE_SDMC,
+		fsMakePath(PATH_EMPTY, ""),
+		fsMakePath(PATH_ASCII, filename),
+		FS_OPEN_WRITE | FS_OPEN_CREATE))) {
+
+		m_error.message = "Couldn't open file";
+        m_error.code = res;
+		DispErrMessage(filename, m_error.message, m_error.code);
+		return;
+	}
+
+	if(R_FAILED(res = IFile_Write(
+		&file,
+		&total,
+		(void*)PA,
+		info->size,
+		FS_OPEN_WRITE))) {
+
+		m_error.message = "Couldn't write to file";
+        m_error.code = res;
+		DispErrMessage(filename, m_error.message, m_error.code);
+	}
+
+	IFile_Close(&file);
 }

@@ -46,9 +46,10 @@
 #include "svc/UnmapProcessMemoryEx.h"
 #include "svc/UnmapProcessMemoryExOld.h"
 #include "svc/ControlService.h"
-#include "svc/CopyHandle.h"
 #include "svc/ControlProcess.h"
+#include "svc/CopyHandle.h"
 #include "svc/TranslateHandle.h"
+#include "svc/ControlMemoryUnsafe.h"
 
 void *officialSVCs[0x7E] = {NULL};
 
@@ -102,6 +103,7 @@ void *svcHook(u8 *pageEnd)
     u32 svcId = *(u8 *)(pageEnd - 0xB5);
     if(svcId == 0xFE)
         svcId = *(u32 *)(pageEnd - 0x110 + 8 * 4); // r12 ; note: max theortical SVC atm: 0x3FFFFFFF. We don't support catching svcIds >= 0x100 atm either
+
     switch(svcId)
     {
         case 0x01:
@@ -113,13 +115,28 @@ void *svcHook(u8 *pageEnd)
 
             if (flags & SignalOnExit)
             {
-                SignalEvent(KPROCESS_GET_RVALUE(currentProcess, onProcessExitEvent));
+                // Signal that the process is about to be terminated
+                if (PLG_GetStatus() == PLG_CFG_RUNNING)
+                    PLG_SignalEvent(PLG_CFG_EXIT_EVENT);
+                else if (PLG_GetStatus() == PLG_CFG_SWAPPED)
+                {
+                    KRecursiveLock__Lock(criticalSectionLock);
 
-                KEvent* event = (KEvent *)KProcessHandleTable__ToKAutoObject(handleTableOfProcess(currentProcess),
-                                                            KPROCESS_GET_RVALUE(currentProcess, resumeProcessExitEvent));
-                WaitSynchronization1(NULL, currentCoreContext->objectContext.currentThread, (KSynchronizationObject *)event, 10000000000ULL);
-                ((KAutoObject *)event)->vtable->DecrementReferenceCount((KAutoObject *)event);
+                    // Remove the locked flag from plugin threads
+                    for (KLinkedListNode *node = threadList->list.nodes.first;
+                        node != (KLinkedListNode *)&threadList->list.nodes;
+                        node = node->next)
+                    {
+                        KThread *thread = (KThread *)node->key;
+
+                        if (thread->ownerProcess == currentProcess && thread->schedulingMask & 0x20)
+                            thread->schedulingMask &= ~0x20;
+                    }
+
+                    KRecursiveLock__Unlock(criticalSectionLock);
+                }
             }
+
             return officialSVCs[0x3];
         }
         case 0x29:
@@ -168,6 +185,8 @@ void *svcHook(u8 *pageEnd)
             return UnmapProcessMemoryEx;
         case 0xA2:
             return ControlMemoryEx;
+        case 0xA3:
+            return ControlMemoryUnsafeWrapper;
         case 0xAA:
             return MapProcessMemoryExOld;
         case 0xAB:

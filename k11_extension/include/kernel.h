@@ -520,6 +520,9 @@ typedef enum MemOp
   MEMOP_REGION_SYSTEM = 0x200,
   MEMOP_REGION_BASE = 0x300,
   MEMOP_LINEAR = 0x10000,
+
+  MEMOP_OP_MASK = 0xFF,
+  MEMOP_REGION_MASK = 0xF00,
 } MemOp;
 
 /* 17 */
@@ -1083,14 +1086,12 @@ typedef struct KProcess##sys\
   KThread *mainThread;\
   u32 interruptEnabledFlags[4];\
   KProcessHandleTable handleTable;\
-  /* Custom fields for plugin system
-     { */ \
+  /* Custom fields for plugin system */ \
+  /* { */ \
   u32     customFlags; /* see KProcess_CustomFlags enum below */ \
   Handle  onMemoryLayoutChangeEvent;\
-  Handle  onProcessExitEvent;\
-  Handle  resumeProcessExitEvent;\
   /* } */ \
-  u8 gap234[36];\
+  u8 gap234[44];\
   u64 unused;\
 } KProcess##sys;
 
@@ -1196,19 +1197,41 @@ typedef struct FcramLayout
   u32 baseSize;
 } FcramLayout;
 
+typedef struct RegionDescriptor
+{
+    void               *firstMemoryBlock;
+    void               *lastMemoryBlock;
+    void               *regionStart;
+    u32                 regionSizeInBytes;
+}   RegionDescriptor;
+
+typedef struct FcramDescriptor
+{
+    RegionDescriptor    appRegion;
+    RegionDescriptor    sysRegion;
+    RegionDescriptor    baseRegion;
+    RegionDescriptor *  regionDescsPtr;
+    u32                 fcramStart;
+    u32                 fcramSizeInPages;
+    u32                 baseMemoryStart;
+    u32                 kernelUsageInBytes;
+    u32                 unknown;
+    KObjectMutex        mutex;
+}   FcramDescriptor;
+
 extern bool isN3DS;
 extern void *officialSVCs[0x7E];
 
 #define KPROCESSRELATED_OFFSETOFF(classname, field) (isN3DS ? offsetof(classname##N3DS, field) :\
-((GET_VERSION_MINOR(kernelVersion) >= 44) ? offsetof(classname##O3DS8x, field) :\
+((kernelVersion >= SYSTEM_VERSION(2, 44, 6)) ? offsetof(classname##O3DS8x, field) :\
 offsetof(classname##O3DSPre8x, field)))
 
 #define KPROCESSRELATED_GET_PTR(obj, field) (isN3DS ? &(obj)->N3DS.field :\
-((GET_VERSION_MINOR(kernelVersion) >= 44) ? &(obj)->O3DS8x.field :\
+((kernelVersion >= SYSTEM_VERSION(2, 44, 6)) ? &(obj)->O3DS8x.field :\
 &(obj)->O3DSPre8x.field))
 
 #define KPROCESSRELATED_GET_PTR_TYPE(type, obj, field) (isN3DS ? (type *)(&(obj)->N3DS.field) :\
-((GET_VERSION_MINOR(kernelVersion) >= 44) ? (type *)(&(obj)->O3DS8x.field) :\
+((kernelVersion >= SYSTEM_VERSION(2, 44, 6)) ? (type *)(&(obj)->O3DS8x.field) :\
 (type *)(&(obj)->O3DSPre8x.field)))
 
 #define KPROCESS_OFFSETOF(field)                    KPROCESSRELATED_OFFSETOFF(KProcess, field)
@@ -1251,7 +1274,7 @@ static inline KDebug *debugOfProcess(KProcess *process)
 static inline const char *classNameOfAutoObject(KAutoObject *object)
 {
     const char *name;
-    if(GET_VERSION_MINOR(kernelVersion) >= 46)
+    if(kernelVersion >= SYSTEM_VERSION(2, 46, 0))
     {
         KClassToken tok;
         object->vtable->GetClassToken(&tok, object);
@@ -1267,7 +1290,7 @@ extern Result (*KProcessHandleTable__CreateHandle)(KProcessHandleTable *this, Ha
 static inline Result createHandleForProcess(Handle *out, KProcess *process, KAutoObject *obj)
 {
     u8 token;
-    if(GET_VERSION_MINOR(kernelVersion) >= 46)
+    if(kernelVersion >= SYSTEM_VERSION(2, 46, 0))
     {
         KClassToken tok;
         obj->vtable->GetClassToken(&tok, obj);

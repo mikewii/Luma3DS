@@ -40,12 +40,12 @@
 #include "memory.h"
 #include "fmt.h"
 
-#include "mem_map.h"
-#include "plgloader.h"
+#include "menus/mem_map.h"
+#include "plugin.h"
 
 Menu rosalinaMenu = {
     "Rosalina menu",
-    .nbItems = 12,
+    .nbItems = 13,
     {   
         { "Process list", METHOD, .method = &RosalinaMenu_ProcessList },
         { "Debugger options...", MENU, .menu = &debuggerMenu },
@@ -53,10 +53,10 @@ Menu rosalinaMenu = {
         { "", METHOD, .method = PluginLoader__MenuCallback},
         { "Cheats...", METHOD, .method = &RosalinaMenu_Cheats },
         { "New 3DS menu...", MENU, .menu = &N3DSMenu },
-        //{ "Take screenshot (slow!)", METHOD, .method = &RosalinaMenu_TakeScreenshot },
         { "System configuration...", MENU, .menu = &sysconfigMenu },
         { "Screen filters...", MENU, .menu = &screenFiltersMenu },
         { "Miscellaneous options...", MENU, .menu = &miscellaneousMenu },
+        { "Take screenshot", METHOD, .method = &RosalinaMenu_TakeScreenshot },
         { "Power off", METHOD, .method = &RosalinaMenu_PowerOff },
         { "Reboot", METHOD, .method = &RosalinaMenu_Reboot },
         { "Credits", METHOD, .method = &RosalinaMenu_ShowCredits }

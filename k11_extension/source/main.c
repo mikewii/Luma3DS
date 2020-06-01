@@ -146,6 +146,26 @@ static void findUsefulSymbols(void)
 {
     u32 *off;
 
+    // Get fcramDescriptor
+    for (off = (u32 *)0xFFF00000; ; ++off)
+    {
+        if (  (off[0] >> 16) == 0xE59F
+           && (off[1] >> 16) == 0xE3A0
+           && (off[2] >> 16) == 0xE3A0
+           && (off[3] >> 16) == 0xE1A0
+           && (off[4] >> 16) == 0xEB00)
+        {
+            fcramDescriptor = (FcramDescriptor *)off[2 + (off[0] & 0xFFFF) / 4];
+            break;
+        }
+    }
+
+    // Get kAlloc
+    for (; *off != 0xE1A00005 || *(off + 1) != 0xE320F000; ++off);
+    off = decodeArmBranch(off + 2);
+    for (; (*off >> 16) != 0xEB00; ++off);
+    kAlloc = (void* (*)(FcramDescriptor *, u32, u32, u32))decodeArmBranch(off);
+
     // Patch ERRF__DumpException
     for(off = (u32 *)0xFFFF0000; *off != 0xE1A04005; ++off);
     ++off;
@@ -191,6 +211,8 @@ static void findUsefulSymbols(void)
     KEvent__Clear = (Result (*)(KEvent *))decodeArmBranch(off + 1);
     for(off = (u32 *)KEvent__Clear; *off != 0xE8BD8070; off++);
     synchronizationMutex = *(KObjectMutex **)(off + 1);
+    for(off = (u32 *)officialSVCs[0x18]; *off != 0xE1A04005; ++off);
+    KEvent__Signal = (Result (*)(KEvent *))decodeArmBranch(off + 1);
 
     for(off = (u32 *)officialSVCs[0x24]; *off != 0xE59F004C; off++);
     WaitSynchronization1 = (Result (*)(void *, KThread *, KSynchronizationObject *, s64))decodeArmBranch(off + 6);
@@ -228,6 +250,9 @@ static void findUsefulSymbols(void)
 
     for (; *off != 0xE8BD8FF0; ++off);
     KLinkedList_KBlockInfo__Clear = (void (*)(KLinkedList *))decodeArmBranch(off - 6);
+
+    for(off = (u32 *)KProcessHwInfo__MapListOfKBlockInfo; *off != 0xE1A0000B; ++off);
+    doControlMemory = (Result (*)(KProcessHwInfo*, u32, u32, u32, u32, u32, u32, u32))decodeArmBranch(off + 1);
 
     for(off = (u32 *)officialSVCs[0x7C]; *off != 0x03530000; off++);
     KObjectMutex__WaitAndAcquire = (void (*)(KObjectMutex *))decodeArmBranch(++off);
@@ -286,6 +311,7 @@ static void findUsefulSymbols(void)
     GetProcessId = (Result (*)(u32 *, Handle))decodeArmBranch((u32 *)officialSVCs[0x35] + 3);
     DebugActiveProcess = (Result (*)(Handle *, u32))decodeArmBranch((u32 *)officialSVCs[0x60] + 3);
     SignalEvent = (Result (*)(Handle event))officialSVCs[0x18];
+    
     UnmapProcessMemory = (Result (*)(Handle, void *, u32))officialSVCs[0x72];
     KernelSetState = (Result (*)(u32, u32, u32, u32))((u32 *)officialSVCs[0x7C] + 1);
 

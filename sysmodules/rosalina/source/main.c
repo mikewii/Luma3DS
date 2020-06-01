@@ -32,6 +32,7 @@
 #include "hbloader.h"
 #include "3dsx.h"
 #include "utils.h"
+#include "sleep.h"
 #include "MyThread.h"
 #include "menus/process_patches.h"
 #include "menus/miscellaneous.h"
@@ -42,11 +43,8 @@
 #include "input_redirection.h"
 #include "minisoc.h"
 #include "draw.h"
-
-//plugin
-#include <plgloader.h>
-
 #include "task_runner.h"
+#include "plugin.h"
 
 bool isN3DS;
 
@@ -203,13 +201,17 @@ static void handleRestartHbAppNotification(u32 notificationId)
 
 static const ServiceManagerServiceEntry services[] = {
     { "hb:ldr", 2, HBLDR_HandleCommands, true },
+    { "plg:ldr", 1, PluginLoader__HandleCommands, true },
     { NULL },
 };
 
 static const ServiceManagerNotificationEntry notifications[] = {
     { 0x100 , handleTermNotification                },
     //{ 0x103 , relinquishConnectionSessions          }, // Sleep mode entry <=== causes issues
+    { 0x214, Sleep__HandleNotification              },
+    { 0x213, Sleep__HandleNotification              },
     { 0x1000, handleNextApplicationDebuggedByForce  },
+    { 0x1001, PluginLoader__HandleKernelEvent       },
     { 0x2000, relinquishConnectionSessions          },
     { 0x3000, handleRestartHbAppNotification        },
     { 0x000, NULL },
@@ -218,6 +220,9 @@ static const ServiceManagerNotificationEntry notifications[] = {
 int main(void)
 {
     static u8 ipcBuf[0x100] = {0};  // used by both err:f and hb:ldr
+
+    Sleep__Init();
+    PluginLoader__Init();
 
     // Set up static buffers for IPC
     u32* bufPtrs = getThreadStaticBuffers();
@@ -235,7 +240,6 @@ int main(void)
 
     MyThread *menuThread = menuCreateThread();
     MyThread *taskRunnerThread = taskRunnerCreateThread();
-    MyThread *plgloaderThread = PluginLoader__CreateThread();
     MyThread *errDispThread = errDispCreateThread();
 
     if (R_FAILED(ServiceManager_Run(services, notifications, NULL)))
@@ -245,7 +249,6 @@ int main(void)
 
     MyThread_Join(menuThread, -1LL);
     MyThread_Join(taskRunnerThread, -1LL);
-    MyThread_Join(plgloaderThread, -1LL);
     MyThread_Join(errDispThread, -1LL);
 
     return 0;

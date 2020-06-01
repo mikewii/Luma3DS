@@ -5,7 +5,7 @@
 .global gamePatchFunc
 .type   gamePatchFunc, %function
 gamePatchFunc:
-    stmfd   sp!, {r0-r12, lr}
+    stmfd   sp!, {r0-r12}
     mrs     r0, cpsr
     stmfd   sp!, {r0}
     adr     r0, g_savedGameInstr
@@ -18,13 +18,16 @@ gamePatchFunc:
     svc     0x94
 
 startplugin:
+    adr		r0, g_savedGameInstr
+	push    {r0}
     ldr     r5, =0x07000100
     blx     r5
+    add		sp, sp, #4
 
 exit:
     ldmfd   sp!, {r0}
     msr     cpsr, r0
-    ldmfd   sp!, {r0-r12, lr}
+    ldmfd   sp!, {r0-r12}
     ldr     lr, =0x00100000
     mov     pc, lr
 
