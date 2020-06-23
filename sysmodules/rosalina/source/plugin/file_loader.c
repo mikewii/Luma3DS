@@ -12,7 +12,9 @@ static FS_DirectoryEntry   g_entries[10];
 
 static char        g_path[256];
 static const char *g_dirPath = "/luma/plugins/%016llX";
-static const char *g_defaultPath = "/luma/plugins/default.3gx";
+static const char *g_defaultPath1 = "/default.3gx";
+static const char *g_defaultPath2 = "/luma/plugins/default.3gx";
+
 
 // pluginLoader.s
 void        gamePatchFunc(void);
@@ -109,11 +111,16 @@ static Result   OpenPluginFile(u64 tid, IFile *plugin)
 {
     if (R_FAILED(FindPluginFile(tid)) || OpenFile(plugin, g_path))
     {
-        // Try to open default plugin
-        if (OpenFile(plugin, g_defaultPath))
-            return -1;
+        bool which = true;
+        Result res = OpenFile(plugin, g_defaultPath1);
+        if (res){
+            which = false;
+            res = OpenFile(plugin, g_defaultPath2);
+            if (res)
+                return -1;
+        }
 
-        PluginLoaderCtx.pluginPath = g_defaultPath;
+        PluginLoaderCtx.pluginPath = which ? g_defaultPath1 : g_defaultPath2;
         PluginLoaderCtx.header.isDefaultPlugin = 1;
         return 0;
     }
