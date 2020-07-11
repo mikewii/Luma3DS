@@ -161,6 +161,10 @@ void menuThreadMain(void)
 
     while(!terminationRequest)
     {
+        svcSleepThread(50 * 1000 * 1000LL);
+        if (menuShouldExit)
+            continue;
+
         if((HID_PAD & menuCombo) == menuCombo && !*blockMenuOpenPys)
         {
             if (!isAcURegistered)
@@ -190,8 +194,6 @@ void menuThreadMain(void)
 
             homeBtnPressed = 0;
         }
-
-        svcSleepThread(50 * 1000 * 1000LL);
     }
 }
 
