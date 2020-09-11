@@ -433,8 +433,7 @@ Result InputRedirection_DoOrUndoPatches(void)
 
     Result res = OpenProcessByName("hid", &processHandle);
     static bool hidPatched = false;
-    static bool irPatched = false;
-
+    
     if(R_SUCCEEDED(res))
     {
         svcGetProcessInfo(&textTotalRoundedSize, processHandle, 0x10002); // only patch .text + .data
@@ -515,12 +514,12 @@ Result InputRedirection_DoOrUndoPatches(void)
     svcCloseHandle(processHandle);
 
     
-    if (irPatched)
-        IR__Unpatch();
-    else
-        IR__Patch();
-    
-    irPatched = !irPatched;
+    //if (irPatched)
+    //    IR__Unpatch();
+    //else
+    //    IR__Patch();
+    //
+    //irPatched = !irPatched;
 
     return res;
 }

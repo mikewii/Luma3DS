@@ -191,7 +191,7 @@ static Result PLGLDR_LoadPlugin(Handle *process)
         svcGetSystemInfo(&out, 0x10000, 0x102);
         if ((out & 1) == 0)
             return 0;
-}
+    }
 
     u32* cmdbuf = getThreadCommandBuffer();
 
