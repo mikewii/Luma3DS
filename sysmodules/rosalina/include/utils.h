@@ -26,7 +26,6 @@
 
 #pragma once
 
-#include <3ds/srv.h>
 #include <3ds/svc.h>
 #include <3ds/result.h>
 #include <3ds/ipc.h>
@@ -57,12 +56,6 @@ static inline void *decodeArmBranch(const void *src)
     off = (off << 6) >> 6; // sign extend
 
     return (void *)((const u8 *)src + 8 + off);
-}
-
-static inline bool isServiceUsable(const char *name)
-{
-    bool r;
-    return R_SUCCEEDED(srvIsServiceRegistered(&r, name)) && r;
 }
 
 static inline void assertSuccess(Result res)

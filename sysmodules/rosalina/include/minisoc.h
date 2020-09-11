@@ -21,10 +21,6 @@
 extern bool miniSocEnabled;
 
 Result miniSocInit(void);
-
-void miniSocLockState(void);
-void miniSocUnlockState(bool force);
-
 Result miniSocExitDirect(void);
 Result miniSocExit(void);
 

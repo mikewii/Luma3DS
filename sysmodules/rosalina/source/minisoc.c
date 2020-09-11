@@ -1,4 +1,3 @@
-
 /*
 *   This file is part of Luma3DS.
 *   Copyright (C) 2016-2020 Aurora Wright, TuxSH
@@ -55,41 +54,6 @@ static Result SOCU_Shutdown(void)
     return cmdbuf[1];
 }
 
-// unsafe but what can I do?
-void miniSocLockState(void)
-{
-    Result res = 0;
-    __dmb();
-    if (!exclusiveStateEntered && isServiceUsable("ndm:u"))
-    {
-        ndmuInit();
-        res = NDMU_EnterExclusiveState(NDM_EXCLUSIVE_STATE_INFRASTRUCTURE);
-        if (R_SUCCEEDED(res))
-            res = NDMU_LockState(); // prevents ndm from switching to StreetPass when the lid is closed
-        exclusiveStateEntered = R_SUCCEEDED(res);
-        __dmb();
-    }
-}
-
-void miniSocUnlockState(bool force)
-{
-    Result res = 0;
-
-    __dmb();
-    if (exclusiveStateEntered)
-    {
-        if (!force)
-        {
-            res = NDMU_UnlockState();
-            if (R_SUCCEEDED(res))
-                res = NDMU_LeaveExclusiveState();
-        }
-        ndmuExit();
-        exclusiveStateEntered = R_FAILED(res);
-        __dmb();
-    }
-}
-
 Result miniSocInit(void)
 {
     if(AtomicPostIncrement(&miniSocRefCount))
@@ -123,7 +87,15 @@ Result miniSocInit(void)
     ret = SOCU_Initialize(miniSocMemHandle, socContextSize);
     if(ret != 0) goto cleanup;
 
-    miniSocLockState();
+    if (!exclusiveStateEntered)
+    {
+        ndmuInit();
+        ret = NDMU_EnterExclusiveState(NDM_EXCLUSIVE_STATE_INFRASTRUCTURE);
+        if (R_SUCCEEDED(ret))
+            ret = NDMU_LockState(); // prevents ndm from switching to StreetPass when the lid is closed
+        //ndmuExit();
+        exclusiveStateEntered = R_SUCCEEDED(ret);
+    }
 
     svcKernelSetState(0x10000, 0x10);
     miniSocEnabled = true;
@@ -168,7 +140,15 @@ Result miniSocExitDirect(void)
     svcControlMemory(&tmp, socContextAddr, socContextAddr, socContextSize, MEMOP_FREE, MEMPERM_DONTCARE);
     if(ret == 0)
     {
-        miniSocUnlockState(false);
+        if (exclusiveStateEntered)
+        {
+            //ndmuInit();
+            ret = NDMU_UnlockState();
+            if (R_SUCCEEDED(ret))
+                ret = NDMU_LeaveExclusiveState();
+            ndmuExit();
+            exclusiveStateEntered = R_FAILED(ret);
+        }
 
         miniSocEnabled = false;
         svcKernelSetState(0x10000, 0x10);
