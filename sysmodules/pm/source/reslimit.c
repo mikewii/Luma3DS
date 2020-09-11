@@ -4,9 +4,6 @@
 #include "manager.h"
 #include "luma.h"
 
-#define CPUTIME_MULTI_MASK      BIT(7)
-#define CPUTIME_SINGLE_MASK     0
-
 typedef s64 ReslimitValues[10];
 
 static const ResourceLimitType g_reslimitInitOrder[10] = {
@@ -192,23 +189,20 @@ static ReslimitValues g_n3dsReslimitValues[4] = {
     Both modes pause threads they don't want to run in thread selection, and unpause them when needed.
     If the threads that are intended to be paused is running an SVC, the pause will happen *after* SVC return.
 
-    Mode0 "multi"
+    Mode0 (unsure)
 
     Starting by "sysmodule" threads, alternatively allow (if preemptible) only sysmodule threads,
     and then only application threads to run.
-    The latter has an exception; if "sysmodule" threads have run for less than 8usec (value is a kernel bug), they
+    The latter has an exception; if "sysmodule" threads have run for less than 2usec, they
     are unpaused an allowed to run instead.
 
-    This happens at a rate of 2ms * (cpuTime/100).
+    This happens at a rate of 1ms * (cpuTime/100).
 
-
-    Mode1 "single"
-
-    This mode is half-broken due to a kernel bug (when "current thread" is the priority 0 kernel thread).
+    Mode1
 
     When this mode is enabled, only one application thread is allowed to be created on core1.
 
-    This divides the core1 time into slices of 25ms.
+    This divides the core1 time into slices of 12.5ms.
 
     The "application" thread is given cpuTime% of the slice.
     The "sysmodules" threads are given a total of (90 - cpuTime)% of the slice.
@@ -324,23 +318,22 @@ void setAppCpuTimeLimitAndSchedModeFromDescriptor(u64 titleId, u16 descriptor)
             - app has a non-0 cputime descriptor in exhdr: maximum core1 cputime reslimit and scheduling
             mode are set according to it. Current reslimit is set to 0. SetAppResourceLimit *is* needed
             to use core1.
-            - app has a 0 cputime descriptor: maximum is set to 80, scheduling mode to "single" (broken).
-            Current reslimit is set to 0, and SetAppResourceLimit *is* also needed
+            - app has a 0 cputime descriptor: maximum is set to 80.
+            Current reslimit is set to 0, and SetAppResourceLimit *is* needed
             to use core1, **EXCEPT** for an hardcoded set of titles.
     */
     u8 cpuTime = (u8)descriptor;
     assertSuccess(setAppCpuTimeLimit(0)); // remove preemption first.
 
     g_manager.cpuTimeBase = 0;
-    u32 currentValueToSet = g_manager.cpuTimeBase; // 0
 
-    if (cpuTime == 0) {
-        // 2.0 apps have this exheader field correctly filled, very often to 0x9E (1.0 titles don't).
+    if (cpuTime != 0) {
+        // Set core1 scheduling mode
+        g_manager.maxAppCpuTime = cpuTime & 0x7F;
+        assertSuccess(svcKernelSetState(6, 3, (cpuTime & 0x80) ? 0LL : 1LL));
+    } else {
         u32 titleUid = ((u32)titleId >> 8) & 0xFFFFF;
-
-        // Default setting is 80% max "single", with a current value of 0
-        cpuTime = CPUTIME_SINGLE_MASK | 80;
-
+        g_manager.maxAppCpuTime = 80;
         static const u32 numOverrides = sizeof(g_startCpuTimeOverrides) / sizeof(g_startCpuTimeOverrides[0]);
 
         if (titleUid >= g_startCpuTimeOverrides[0].titleUid && titleUid <= g_startCpuTimeOverrides[numOverrides - 1].titleUid) {
@@ -348,25 +341,14 @@ void setAppCpuTimeLimitAndSchedModeFromDescriptor(u64 titleId, u16 descriptor)
             for (u32 i = 0; i < numOverrides && titleUid < g_startCpuTimeOverrides[i].titleUid; i++);
             if (i < numOverrides) {
                 if (g_startCpuTimeOverrides[i].value > 100 && g_startCpuTimeOverrides[i].value < 200) {
-                    cpuTime = CPUTIME_MULTI_MASK | 80; // "multi", max 80%
-                    currentValueToSet = g_startCpuTimeOverrides[i].value - 100;
+                    assertSuccess(svcKernelSetState(6, 3, 0LL));
+                    assertSuccess(setAppCpuTimeLimit(g_startCpuTimeOverrides[i].value - 100));
                 } else {
-                    cpuTime = CPUTIME_SINGLE_MASK | 80; // "single", max 80%
-                    currentValueToSet = g_startCpuTimeOverrides[i].value;
+                    assertSuccess(svcKernelSetState(6, 3, 1LL));
+                    assertSuccess(setAppCpuTimeLimit(g_startCpuTimeOverrides[i].value));
                 }
             }
         }
-    }
-
-    // Set core1 scheduling mode
-    assertSuccess(svcKernelSetState(6, 3, (cpuTime & CPUTIME_MULTI_MASK) ? 0LL : 1LL));
-
-    // Set max value (limit)
-    g_manager.maxAppCpuTime = cpuTime & 0x7F;
-
-    // Set current value (for 1.0 apps)
-    if (currentValueToSet != 0) {
-        assertSuccess(setAppCpuTimeLimit(currentValueToSet));
     }
 }
 
