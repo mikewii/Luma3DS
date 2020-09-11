@@ -28,16 +28,9 @@
 #include "svc/SendSyncRequest.h"
 #include "ipc.h"
 
-static inline bool isNdmuWorkaround(const SessionInfo *info, u32 pid)
-{
-    return info != NULL && strcmp(info->name, "ndm:u") == 0 && hasStartedRosalinaNetworkFuncsOnce && pid >= nbSection0Modules;
-}
-
 Result SendSyncRequestHook(Handle handle)
 {
-    KProcess *currentProcess = currentCoreContext->objectContext.currentProcess;
-    KProcessHandleTable *handleTable = handleTableOfProcess(currentProcess);
-    u32 pid = idOfProcess(currentProcess);
+    KProcessHandleTable *handleTable = handleTableOfProcess(currentCoreContext->objectContext.currentProcess);
     KClientSession *clientSession = (KClientSession *)KProcessHandleTable__ToKAutoObject(handleTable, handle);
 
     u32 *cmdbuf = (u32 *)((u8 *)currentCoreContext->objectContext.currentThread->threadLocalStorage + 0x80);
@@ -54,7 +47,7 @@ Result SendSyncRequestHook(Handle handle)
             case 0x10042:
             {
                 SessionInfo *info = SessionInfo_Lookup(clientSession->parentSession);
-                if(isNdmuWorkaround(info, pid))
+                if(info != NULL && strcmp(info->name, "ndm:u") == 0 && hasStartedRosalinaNetworkFuncsOnce)
                 {
                     cmdbuf[0] = 0x10040;
                     cmdbuf[1] = 0;
@@ -94,7 +87,7 @@ Result SendSyncRequestHook(Handle handle)
             case 0x20002:
             {
                 SessionInfo *info = SessionInfo_Lookup(clientSession->parentSession);
-                if(isNdmuWorkaround(info, pid))
+                if(info != NULL && strcmp(info->name, "ndm:u") == 0 && hasStartedRosalinaNetworkFuncsOnce)
                 {
                     cmdbuf[0] = 0x20040;
                     cmdbuf[1] = 0;
@@ -136,7 +129,7 @@ Result SendSyncRequestHook(Handle handle)
                 if(!hasStartedRosalinaNetworkFuncsOnce)
                     break;
                 SessionInfo *info = SessionInfo_Lookup(clientSession->parentSession);
-                skip = isNdmuWorkaround(info, pid); // SuspendScheduler
+                skip = info != NULL && strcmp(info->name, "ndm:u") == 0; // SuspendScheduler
                 if(skip)
                     cmdbuf[1] = 0;
                 break;
@@ -147,7 +140,7 @@ Result SendSyncRequestHook(Handle handle)
                 if(!hasStartedRosalinaNetworkFuncsOnce)
                     break;
                 SessionInfo *info = SessionInfo_Lookup(clientSession->parentSession);
-                if(isNdmuWorkaround(info, pid)) // ResumeScheduler
+                if(info != NULL && strcmp(info->name, "ndm:u") == 0) // ResumeScheduler
                 {
                     cmdbuf[0] = 0x90040;
                     cmdbuf[1] = 0;
