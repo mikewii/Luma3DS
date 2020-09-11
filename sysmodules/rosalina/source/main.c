@@ -46,6 +46,7 @@
 #include "plugin.h"
 
 bool isN3DS;
+extern bool menuShouldExit;
 
 Result __sync_init(void);
 Result __sync_fini(void);
@@ -165,7 +166,6 @@ static void handleShellNotification(u32 notificationId)
     if (notificationId == 0x213) {
         // Shell opened
         // Note that this notification is fired on system init
-        ScreenFiltersMenu_RestoreCct();
         menuShouldExit = false;
     } else {
         // Shell closed
