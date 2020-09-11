@@ -91,7 +91,6 @@ Result miniSocInit(void)
 
     svcKernelSetState(0x10000, 2);
     miniSocEnabled = true;
-    ROSALINA_PREVENT_DISCONNECT = true;
     return 0;
 
 cleanup:
@@ -135,7 +134,6 @@ Result miniSocExitDirect(void)
     {
         svcKernelSetState(0x10000, 2);
         miniSocEnabled = false;
-        ROSALINA_PREVENT_DISCONNECT = false;
     }
     return ret;
 }
