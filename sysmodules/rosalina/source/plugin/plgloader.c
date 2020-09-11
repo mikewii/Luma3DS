@@ -466,7 +466,12 @@ void    PLG__NotifyEvent(PLG_Event event, bool signal)
 void    PLG__WaitForReply(void)
 {
     __strex__(PluginLoaderCtx.plgReplyPA, PLG_WAIT);
-    svcArbitrateAddress(PluginLoaderCtx.arbiter, (u32)PluginLoaderCtx.plgReplyPA, ARBITRATION_WAIT_IF_LESS_THAN_TIMEOUT, PLG_OK, 5000000000ULL);
+    svcArbitrateAddress(
+        PluginLoaderCtx.arbiter,
+        (u32)PluginLoaderCtx.plgReplyPA, 
+        ARBITRATION_WAIT_IF_LESS_THAN_TIMEOUT,
+        PLG_OK, 
+        5000000000ULL);
 }
 
 static void WaitForProcessTerminated(void *arg)
