@@ -125,8 +125,6 @@ void  (*coreBarrier)(void);
 void* (*kAlloc)(FcramDescriptor *fcramDesc, u32 nbPages, u32 alignment, u32 region);
 
 CfwInfo cfwInfo;
-u32 kextBasePa;
-u32 stolenSystemMemRegionSize;
 
 vu32 rosalinaState;
 bool hasStartedRosalinaNetworkFuncsOnce;
