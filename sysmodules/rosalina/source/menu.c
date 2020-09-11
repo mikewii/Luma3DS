@@ -37,20 +37,6 @@
 #include "minisoc.h"
 #include "plugin.h"
 
-u32 DispWarningOnHome(void);
-
-bool menuShouldExit = false;
-static MyThread menuThread;
-static u8 ALIGN(8) menuThreadStack[0x1000];
-static u8 batteryLevel = 255;
-static u32 homeBtnPressed = 0;
-static s32 menuRefCount = 0;
-extern bool isN3DS;
-
-u32 menuCombo;
-u32 blockMenuOpen = 0;
-
-
 u32 waitInputWithTimeout(u32 msec)
 {
     bool pressedKey = false;
@@ -139,6 +125,11 @@ u32 waitCombo(void)
     return waitComboWithTimeout(0);
 }
 
+static MyThread menuThread;
+static u8 ALIGN(8) menuThreadStack[0x1000];
+static u8 batteryLevel = 255;
+static u32 homeBtnPressed = 0;
+
 MyThread *menuCreateThread(void)
 {
     //svcKernelSetState(0x10007, &homeBtnPressed);
@@ -146,6 +137,12 @@ MyThread *menuCreateThread(void)
         svcBreak(USERBREAK_PANIC);
     return &menuThread;
 }
+
+extern bool isN3DS;
+u32 menuCombo;
+u32 blockMenuOpen = 0;
+
+u32 DispWarningOnHome(void);
 
 void menuThreadMain(void)
 {
@@ -200,6 +197,7 @@ void menuThreadMain(void)
     }
 }
 
+static s32 menuRefCount = 0;
 void menuEnter(void)
 {
     Draw_Lock();
