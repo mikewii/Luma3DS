@@ -16,11 +16,26 @@ static u32 socContextAddr = 0x08000000;
 static u32 socContextSize = 0x60000;
 static Handle miniSocHandle;
 static Handle miniSocMemHandle;
-static bool exclusiveStateEntered = false;
 
 bool miniSocEnabled = false;
 
 s32 _net_convert_error(s32 sock_retval);
+
+// To prevent ndm:u from disconnecting us
+static Result srvExtAddToNdmuWorkaroundCount(s32 count)
+{
+    Result ret = 0;
+    u32 *cmdbuf = getThreadCommandBuffer();
+
+    cmdbuf[0] = IPC_MakeHeader(0x1000,1,0);
+    cmdbuf[1] = (u32)count;
+
+    ret = svcSendSyncRequest(*srvGetSessionHandle());
+    if(ret != 0)
+        return ret;
+
+    return cmdbuf[1];
+}
 
 static Result SOCU_Initialize(Handle memhandle, u32 memsize)
 {
@@ -87,18 +102,9 @@ Result miniSocInit(void)
     ret = SOCU_Initialize(miniSocMemHandle, socContextSize);
     if(ret != 0) goto cleanup;
 
-    if (!exclusiveStateEntered)
-    {
-        ndmuInit();
-        ret = NDMU_EnterExclusiveState(NDM_EXCLUSIVE_STATE_INFRASTRUCTURE);
-        if (R_SUCCEEDED(ret))
-            ret = NDMU_LockState(); // prevents ndm from switching to StreetPass when the lid is closed
-        //ndmuExit();
-        exclusiveStateEntered = R_SUCCEEDED(ret);
-    }
-
-    svcKernelSetState(0x10000, 0x10);
+    svcKernelSetState(0x10000, 2);
     miniSocEnabled = true;
+    srvExtAddToNdmuWorkaroundCount(1);
 
     return 0;
 
@@ -126,6 +132,7 @@ cleanup:
 
 Result miniSocExitDirect(void)
 {
+    //if (miniSocRefCount != 0) __builtin_trap();
     Result ret = 0;
     u32 tmp;
 
@@ -140,18 +147,9 @@ Result miniSocExitDirect(void)
     svcControlMemory(&tmp, socContextAddr, socContextAddr, socContextSize, MEMOP_FREE, MEMPERM_DONTCARE);
     if(ret == 0)
     {
-        if (exclusiveStateEntered)
-        {
-            //ndmuInit();
-            ret = NDMU_UnlockState();
-            if (R_SUCCEEDED(ret))
-                ret = NDMU_LeaveExclusiveState();
-            ndmuExit();
-            exclusiveStateEntered = R_FAILED(ret);
-        }
-
         miniSocEnabled = false;
-        svcKernelSetState(0x10000, 0x10);
+        srvExtAddToNdmuWorkaroundCount(-1);
+        svcKernelSetState(0x10000, 2);
     }
     return ret;
 }
