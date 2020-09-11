@@ -343,6 +343,7 @@ void MiscellaneousMenu_SyncTimeDate(void)
     bool isSocURegistered;
 
     time_t t;
+    struct tm localt = {0};
 
     res = srvIsServiceRegistered(&isSocURegistered, "soc:U");
     cantStart = R_FAILED(res) || !isSocURegistered;
@@ -386,7 +387,8 @@ void MiscellaneousMenu_SyncTimeDate(void)
         {
             t += 3600 * utcOffset;
             t += 60 * utcOffsetMinute;
-            res = ntpSetTimeDate(t);
+            gmtime_r(&t, &localt);
+            res = ntpSetTimeDate(&localt);
         }
     }
 
