@@ -110,20 +110,20 @@ void     PluginLoader__HandleCommands(void *_ctx)
 
             if (ctx->isEnabled && TryToLoadPlugin(ctx->target))
             {
-                //if (!ctx->useUserLoadParameters && ctx->userLoadParameters.noFlash)
-                //    ctx->userLoadParameters.noFlash = false;
-                //else
-                //{
-                //    // A little flash to notify the user that the plugin is loaded
-                //    for (u32 i = 0; i < 64; i++)
-                //    {
-                //        REG32(0x10202204) = 0x01FF9933;
-                //        svcSleepThread(5000000);
-                //    }
-                //    REG32(0x10202204) = 0;
-                //}
-                //if (!ctx->userLoadParameters.noIRPatch)
-                //    IR__Patch();
+                if (!ctx->useUserLoadParameters && ctx->userLoadParameters.noFlash)
+                    ctx->userLoadParameters.noFlash = false;
+                else
+                {
+                    // A little flash to notify the user that the plugin is loaded
+                    for (u32 i = 0; i < 64; i++)
+                    {
+                        REG32(0x10202204) = 0x01FF9933;
+                        svcSleepThread(5000000);
+                    }
+                    REG32(0x10202204) = 0;
+                }
+                if (!ctx->userLoadParameters.noIRPatch)
+                    IR__Patch();
                 SetConfigMemoryStatus(PLG_CFG_RUNNING);
             }
             else
@@ -492,8 +492,8 @@ static void WaitForProcessTerminated(void *arg)
     ctx->target = 0;
     ctx->isExeDecFunctionset = false;
     ctx->isSwapFunctionset = false;
-    //if (!ctx->userLoadParameters.noIRPatch)
-    //    IR__Unpatch();
+    if (!ctx->userLoadParameters.noIRPatch)
+        IR__Unpatch();
 }
 
 void    PluginLoader__HandleKernelEvent(u32 notifId)

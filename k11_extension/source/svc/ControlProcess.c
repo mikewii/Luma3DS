@@ -113,7 +113,7 @@ Result  ControlProcess(Handle processHandle, ProcessOp op, u32 varg2, u32 varg3)
 
         case PROCESSOP_SIGNAL_ON_EXIT:
         {
-            *KPROCESS_GET_PTR(process, customFlags) |= SignalOnExit;
+                *KPROCESS_GET_PTR(process, customFlags) |= SignalOnExit;
             break;
         }
         case PROCESSOP_GET_PA_FROM_VA:

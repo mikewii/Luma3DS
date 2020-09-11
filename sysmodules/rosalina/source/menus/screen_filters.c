@@ -91,35 +91,16 @@ void applyColorSettings(color_setting_t* cs)
 
 Menu screenFiltersMenu = {
     "Screen filters menu",
-    .nbItems = 9,
+    .nbItems = 6,
     {
-        { "Disable (6500)", METHOD, .method = &screenFiltersSetDisabled },
-        { "Increase (8000)", METHOD, .method = &screenFiltersInc1 },
-        { "Increase (10000)", METHOD, .method = &screenFiltersInc2 },
-        { "Increase (13000)", METHOD, .method = &screenFiltersInc3 },
-        { "Reduce (4300)", METHOD, .method = &screenFiltersReduceBlueLevel1 },
-        { "Reduce (3200)", METHOD, .method = &screenFiltersReduceBlueLevel2 },
-        { "Reduce (2100)", METHOD, .method = &screenFiltersReduceBlueLevel3 },
-        { "Reduce (1550)", METHOD, .method = &screenFiltersReduceBlueLevel4 },
-        { "Reduce (1000)", METHOD, .method = &screenFiltersReduceBlueLevel5 },
+        { "Disable", METHOD, .method = &screenFiltersSetDisabled },
+        { "Reduce blue light (level 1)", METHOD, .method = &screenFiltersReduceBlueLevel1 },
+        { "Reduce blue light (level 2)", METHOD, .method = &screenFiltersReduceBlueLevel2 },
+        { "Reduce blue light (level 3)", METHOD, .method = &screenFiltersReduceBlueLevel3 },
+        { "Reduce blue light (level 4)", METHOD, .method = &screenFiltersReduceBlueLevel4 },
+        { "Reduce blue light (level 5)", METHOD, .method = &screenFiltersReduceBlueLevel5 },
     }
 };
-
-void screenFiltersInc1(void)
-{
-    screenFiltersCurrentTemperature = 8000;
-    screenFiltersSetTemperature(screenFiltersCurrentTemperature);
-}
-void screenFiltersInc2(void)
-{
-    screenFiltersCurrentTemperature = 10000;
-    screenFiltersSetTemperature(screenFiltersCurrentTemperature);
-}
-void screenFiltersInc3(void)
-{
-    screenFiltersCurrentTemperature = 13000;
-    screenFiltersSetTemperature(screenFiltersCurrentTemperature);
-}
 
 void screenFiltersSetDisabled(void)
 {
