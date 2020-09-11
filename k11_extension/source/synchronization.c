@@ -66,12 +66,17 @@ void KThread__DebugReschedule(KThread *this, bool lock)
     KRecursiveLock__Unlock(criticalSectionLock);
 }
 
-static void rosalinaLockThread(KThread *thread)
+bool rosalinaThreadLockPredicate(KThread *thread)
 {
-    KThread *syncThread = synchronizationMutex->owner;
+    KProcess *process = thread->ownerProcess;
+    if(process == NULL)
+        return false;
 
-    if(syncThread == NULL || syncThread != thread)
-        rosalinaRescheduleThread(thread, true);
+    u64 titleId = codeSetOfProcess(process)->titleId;
+    u32 highTitleId = (u32)(titleId >> 32), lowTitleId = (u32)titleId;
+    return
+        ((rosalinaState & 1) && idOfProcess(process) >= nbSection0Modules &&
+        (highTitleId != 0x00040130 || (highTitleId == 0x00040130 && (lowTitleId == 0x1A02 || lowTitleId == 0x1C02))));
 }
 
 void rosalinaRescheduleThread(KThread *thread, bool lock)
@@ -84,37 +89,20 @@ void rosalinaRescheduleThread(KThread *thread, bool lock)
     else
         thread->schedulingMask &= ~0x40;
 
-    if (oldSchedulingMask != thread->schedulingMask)
-        KScheduler__AdjustThread(currentCoreContext->objectContext.currentScheduler, thread, oldSchedulingMask);
+    KScheduler__AdjustThread(currentCoreContext->objectContext.currentScheduler, thread, oldSchedulingMask);
 
     KRecursiveLock__Unlock(criticalSectionLock);
 }
 
-bool rosalinaThreadLockPredicate(KThread *thread, u32 mask)
+void rosalinaLockThread(KThread *thread)
 {
-    KProcess *process = thread->ownerProcess;
-    if(process == NULL || idOfProcess(process) < nbSection0Modules)
-        return false;
+    KThread *syncThread = synchronizationMutex->owner;
 
-    u64 titleId = codeSetOfProcess(process)->titleId;
-    u32 highTitleId = (u32)(titleId >> 32), lowTitleId = (u32)(titleId & ~0xF0000001); // clear N3DS and SAFE_FIRM bits
-
-    if (mask & 1)
-    {
-        if (highTitleId != 0x00040130) // non-sysmodules
-            return true;
-        else
-            return lowTitleId == 0x1A02 || lowTitleId == 0x1C02 || lowTitleId == 0x2702; // dsp, gsp, csnd
-    }
-    if (mask & 4)
-    {
-        return lowTitleId == 0x1D02 || lowTitleId == 0x3302;
-    }
-
-    return false;
+    if(syncThread == NULL || syncThread != thread)
+        rosalinaRescheduleThread(thread, true);
 }
 
-void rosalinaLockThreads(u32 mask)
+void rosalinaLockAllThreads(void)
 {
     bool currentThreadsFound = false;
 
@@ -122,7 +110,7 @@ void rosalinaLockThreads(u32 mask)
     for(KLinkedListNode *node = threadList->list.nodes.first; node != (KLinkedListNode *)&threadList->list.nodes; node = node->next)
     {
         KThread *thread = (KThread *)node->key;
-        if(!rosalinaThreadLockPredicate(thread, mask))
+        if(!rosalinaThreadLockPredicate(thread))
             continue;
         if(thread == coreCtxs[thread->coreId].objectContext.currentThread)
             currentThreadsFound = true;
@@ -135,7 +123,7 @@ void rosalinaLockThreads(u32 mask)
         for(KLinkedListNode *node = threadList->list.nodes.first; node != (KLinkedListNode *)&threadList->list.nodes; node = node->next)
         {
             KThread *thread = (KThread *)node->key;
-            if(!rosalinaThreadLockPredicate(thread, mask))
+            if(!rosalinaThreadLockPredicate(thread))
                 continue;
             if(!(thread->schedulingMask & 0x40))
             {
@@ -157,7 +145,7 @@ void rosalinaLockThreads(u32 mask)
     KRecursiveLock__Unlock(criticalSectionLock);
 }
 
-void rosalinaUnlockThreads(u32 mask)
+void rosalinaUnlockAllThreads(void)
 {
     for(KLinkedListNode *node = threadList->list.nodes.first; node != (KLinkedListNode *)&threadList->list.nodes; node = node->next)
     {
@@ -166,7 +154,7 @@ void rosalinaUnlockThreads(u32 mask)
         if((thread->schedulingMask & 0xF) == 2) // thread is terminating
             continue;
 
-        if((thread->schedulingMask & 0x40) && rosalinaThreadLockPredicate(thread, mask))
+        if(thread->schedulingMask & 0x40)
             rosalinaRescheduleThread(thread, false);
     }
 }

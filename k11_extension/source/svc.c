@@ -90,7 +90,7 @@ void signalSvcReturn(u8 *pageEnd)
 void postprocessSvc(void)
 {
     KThread *currentThread = currentCoreContext->objectContext.currentThread;
-    if(!currentThread->shallTerminate && rosalinaThreadLockPredicate(currentThread, rosalinaState & 5))
+    if(!currentThread->shallTerminate && rosalinaThreadLockPredicate(currentThread))
         rosalinaRescheduleThread(currentThread, true);
 
     officialPostProcessSvc();

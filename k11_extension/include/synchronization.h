@@ -36,23 +36,17 @@ void executeFunctionOnCores(SGI0Handler_t func, u8 targetList, u8 targetListFilt
 
 void KScheduler__TriggerCrossCoreInterrupt(KScheduler *this);
 void KThread__DebugReschedule(KThread *this, bool lock);
-
-bool rosalinaThreadLockPredicate(KThread *thread, u32 mask);
+bool rosalinaThreadLockPredicate(KThread *thread);
 void rosalinaRescheduleThread(KThread *thread, bool lock);
-
-void rosalinaLockThreads(u32 mask);
-void rosalinaUnlockThreads(u32 mask);
+void rosalinaLockThread(KThread *thread);
+void rosalinaLockAllThreads(void);
+void rosalinaUnlockAllThreads(void);
 
 // Taken from ctrulib:
 
 static inline void __dsb(void)
 {
 	__asm__ __volatile__("mcr p15, 0, %[val], c7, c10, 4" :: [val] "r" (0) : "memory");
-}
-
-static inline void __dmb(void)
-{
-    __asm__ __volatile__("mcr p15, 0, %[val], c7, c10, 5" :: [val] "r" (0) : "memory");
 }
 
 static inline void __clrex(void)
