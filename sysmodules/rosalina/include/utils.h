@@ -71,4 +71,5 @@ static inline void error(u32* cmdbuf, Result rc)
 
 extern bool  isN3DS;
 
+Result OpenProcessByName(const char *name, Handle *h);
 Result SaveSettings(void);

@@ -73,11 +73,7 @@ static Result loadWithoutDependencies(Handle *outDebug, ProcessData **outProcess
     u32 serviceCount;
     for(serviceCount = 0; serviceCount < 34 && *(u64 *)localcaps->service_access[serviceCount] != 0; serviceCount++);
 
-    // Not in official PM: patch local caps to give access to everything
-    ExHeader_Arm11StorageInfo storageInfo = localcaps->storage_info;
-    storageInfo.fs_access_info = 0xFFFFFFFF;
-
-    TRY(FSREG_Register(pid, programHandle, programInfo, &storageInfo));
+    TRY(FSREG_Register(pid, programHandle, programInfo, &localcaps->storage_info));
     TRY(SRVPM_RegisterProcess(pid, serviceCount, localcaps->service_access));
 
     if (localcaps->reslimit_category <= RESLIMIT_CATEGORY_OTHER) {

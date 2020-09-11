@@ -30,6 +30,7 @@
 #include "menu.h"
 #include "draw.h"
 #include "menus/process_list.h"
+#include "menus/process_patches.h"
 #include "menus/n3ds.h"
 #include "menus/debugger.h"
 #include "menus/miscellaneous.h"
