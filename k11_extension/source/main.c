@@ -380,7 +380,10 @@ void main(FcramLayout *layout, KCoreContext *ctxs)
     kextBasePa = p->basePA;
     stolenSystemMemRegionSize = p->stolenSystemMemRegionSize;
 
+    u32 kextSize = (u32)(__end__ - __start__);
     layout->systemSize -= stolenSystemMemRegionSize;
+    layout->baseAddr = layout->baseAddr - stolenSystemMemRegionSize + kextSize;
+    layout->baseSize = layout->baseSize + stolenSystemMemRegionSize - kextSize;
     fcramLayout = *layout;
     coreCtxs = ctxs;
 
@@ -402,8 +405,4 @@ void main(FcramLayout *layout, KCoreContext *ctxs)
 
     rosalinaState = 0;
     hasStartedRosalinaNetworkFuncsOnce = false;
-
-    // DSB, Flush Prefetch Buffer (more or less "isb")
-    __asm__ __volatile__ ("mcr p15, 0, %0, c7, c10, 4" :: "r" (0) : "memory");
-    __asm__ __volatile__ ("mcr p15, 0, %0, c7, c5, 4" :: "r" (0) : "memory");
 }
