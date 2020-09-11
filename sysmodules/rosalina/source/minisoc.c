@@ -7,9 +7,12 @@
 
 #include "minisoc.h"
 #include <sys/socket.h>
-#include <3ds.h>
+#include <3ds/ipc.h>
+#include <3ds/os.h>
+#include <3ds/synchronization.h>
+#include <3ds/result.h>
 #include <string.h>
-#include "utils.h"
+#include "csvc.h"
 
 s32 miniSocRefCount = 0;
 static u32 socContextAddr = 0x08000000;
@@ -20,22 +23,6 @@ static Handle miniSocMemHandle;
 bool miniSocEnabled = false;
 
 s32 _net_convert_error(s32 sock_retval);
-
-// To prevent ndm:u from disconnecting us
-static Result srvExtAddToNdmuWorkaroundCount(s32 count)
-{
-    Result ret = 0;
-    u32 *cmdbuf = getThreadCommandBuffer();
-
-    cmdbuf[0] = IPC_MakeHeader(0x1000,1,0);
-    cmdbuf[1] = (u32)count;
-
-    ret = svcSendSyncRequest(*srvGetSessionHandle());
-    if(ret != 0)
-        return ret;
-
-    return cmdbuf[1];
-}
 
 static Result SOCU_Initialize(Handle memhandle, u32 memsize)
 {
@@ -104,8 +91,7 @@ Result miniSocInit(void)
 
     svcKernelSetState(0x10000, 2);
     miniSocEnabled = true;
-    srvExtAddToNdmuWorkaroundCount(1);
-
+    ROSALINA_PREVENT_DISCONNECT = true;
     return 0;
 
 cleanup:
@@ -147,9 +133,9 @@ Result miniSocExitDirect(void)
     svcControlMemory(&tmp, socContextAddr, socContextAddr, socContextSize, MEMOP_FREE, MEMPERM_DONTCARE);
     if(ret == 0)
     {
-        miniSocEnabled = false;
-        srvExtAddToNdmuWorkaroundCount(-1);
         svcKernelSetState(0x10000, 2);
+        miniSocEnabled = false;
+        ROSALINA_PREVENT_DISCONNECT = false;
     }
     return ret;
 }
