@@ -141,7 +141,6 @@ static void handleSleepNotification(u32 notificationId)
     switch (notificationId)
     {
         case PTMNOTIFID_SLEEP_REQUESTED:
-            menuShouldExit = true;
             PTMSYSM_ReplyToSleepQuery(ROSALINA_PREVENT_DISCONNECT); // deny sleep request if we have network stuff running
             break;
         case PTMNOTIFID_GOING_TO_SLEEP:
@@ -152,26 +151,10 @@ static void handleSleepNotification(u32 notificationId)
             break;
         case PTMNOTIFID_SLEEP_DENIED:
         case PTMNOTIFID_FULLY_AWAKE:
-            menuShouldExit = false;
-            break;
         default:
             break;
     }
     ptmSysmExit();
-}
-
-static void handleShellNotification(u32 notificationId)
-{
-    if (notificationId == 0x213) {
-        // Shell opened
-        // Note that this notification is fired on system init
-        ScreenFiltersMenu_RestoreCct();
-        menuShouldExit = false;
-    } else {
-        // Shell closed
-        menuShouldExit = true;
-    }
-
 }
 
 static void handlePreTermNotification(u32 notificationId)
@@ -214,6 +197,16 @@ static const ServiceManagerServiceEntry services[] = {
 };
 
 static const ServiceManagerNotificationEntry notifications[] = {
+<<<<<<< HEAD
+    { 0x100 , handleTermNotification                },
+    //{ 0x103 , relinquishConnectionSessions          }, // Sleep mode entry <=== causes issues
+    { 0x214, Sleep__HandleNotification              },
+    { 0x213, Sleep__HandleNotification              },
+    { 0x1000, handleNextApplicationDebuggedByForce  },
+    { 0x1001, PluginLoader__HandleKernelEvent       },
+    { 0x2000, relinquishConnectionSessions          },
+    { 0x3000, handleRestartHbAppNotification        },
+=======
     { 0x100 ,                       handleTermNotification                  },
     { PTMNOTIFID_SLEEP_REQUESTED,   handleSleepNotification                 },
     { PTMNOTIFID_SLEEP_DENIED,      handleSleepNotification                 },
@@ -222,11 +215,10 @@ static const ServiceManagerNotificationEntry notifications[] = {
     { PTMNOTIFID_FULLY_WAKING_UP,   handleSleepNotification                 },
     { PTMNOTIFID_FULLY_AWAKE,       handleSleepNotification                 },
     { PTMNOTIFID_HALF_AWAKE,        handleSleepNotification                 },
-    { 0x213,                        handleShellNotification                 },
-    { 0x214,                        handleShellNotification                 },
     { 0x1000,                       handleNextApplicationDebuggedByForce    },
     { 0x2000,                       handlePreTermNotification               },
     { 0x3000,                       handleRestartHbAppNotification          },
+>>>>>>> 2d58ec4... rosalina: prevent sleep mode entry if debugger/input redir is enabled to prevent lockup
     { 0x000, NULL },
 };
 
