@@ -47,13 +47,13 @@ Menu PGSelectedProcessMenu = {
 
 void 	MM__GetFreeMemory(char* out) {
 	extern bool isN3DS;
-	MemOp memSys = MEMOP_REGION_SYSTEM;
-	MemOp memBase = MEMOP_REGION_BASE;
-	MemOp memApp = MEMOP_REGION_APP;
+	//MemOp memSys = MEMOP_REGION_SYSTEM;
+	//MemOp memBase = MEMOP_REGION_BASE;
+	//MemOp memApp = MEMOP_REGION_APP;
 
-	u32 sysFree = (u32)osGetMemRegionFree(memSys);
-	u32 baseFree = (u32)osGetMemRegionFree(memBase);
-	u32 appFree = (u32)osGetMemRegionFree(memApp);
+	u32 sysFree = 0;//(u32)osGetMemRegionFree(memSys);
+	u32 baseFree = 0;//(u32)osGetMemRegionFree(memBase);
+	u32 appFree = 0;//(u32)osGetMemRegionFree(memApp);
 
 	
 	sprintf(out, "IsN3DS: %d\nSysFree : %lX\nBaseFree: %lX\nAppFree : %lX\n", 
