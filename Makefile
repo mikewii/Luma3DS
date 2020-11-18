@@ -8,10 +8,10 @@ REVISION	:=	$(shell git describe --tags --match v[0-9]* --abbrev=8 | sed 's/-[0-
 
 SUBFOLDERS	:=	sysmodules arm11 arm9 k11_extension
 
-IP 			:=  59
-FTP_HOST 	:=	192.168.0.
+FTP_HOST 	:=	192.168.0.59
 FTP_PORT	:=	"5000"
 FTP_PATH	:=	""
+FTP_FILE	:=	boot.firm
 
 .PHONY:	all release clean $(SUBFOLDERS)
 
@@ -27,7 +27,7 @@ re: clean all
 	
 send:
 	@echo "Sending luma over FTP"
-	@python $(TOPD)/send_ftp.py $(TOPD)/boot.firm $(FTP_PATH) "$(FTP_HOST)$(IP)" $(FTP_PORT)
+	@exec $(TOPD)/ftp_send.sh $(FTP_HOST) $(FTP_PORT) $(FTP_FILE)
 
 $(NAME)$(REVISION).zip:	boot.firm exception_dump_parser
 	@zip -r $@ $^ -x "*.DS_Store*" "*__MACOSX*"
